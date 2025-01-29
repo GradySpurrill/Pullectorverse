@@ -17,7 +17,6 @@ root.render(
     <React.StrictMode>
       
       <App />
-      <loginButton />
     </React.StrictMode>
   </Auth0Provider>
 );
