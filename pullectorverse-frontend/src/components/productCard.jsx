@@ -21,7 +21,10 @@ const ProductCard = ({ product }) => {
     ? { width: '150px', height: 'auto' } 
     : product.category === "Accessory"
     ? { width: '160px', height: 'auto' } 
-    : { width: '280px', height: 'auto' };
+    : product.category === "sealed"
+    ? { width: '50px', height: 'auto' } 
+    : { width: '150px', height: 'auto' };
+    
 
   return (
     <div className="border p-4 rounded-lg shadow-lg text-center bg-white">
