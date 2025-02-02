@@ -1,28 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 const FilterBar = ({ filters, setFilters, category }) => {
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
-  const handlePriceRangeChange = (e) => {
-    const value = e.target.value;
-    let range = null;
-    if (value === "") {
-      range = null;
-    } else if (value === "0-10") {
-      range = [0, 10];
-    } else if (value === "11-50") {
-      range = [11, 50];
-    } else if (value === "50-100") {
-      range = [50, 100];
-    } else if (value === "100-199") {
-      range = [100, 199];
-    } else if (value === "200-300") {
-      range = [200, 300];
-    } else if (value === "301++") {
-      range = [301, Infinity];
+  useEffect(() => {
+    if (filters.priceRange === null) {
+      setMinPrice("");
+      setMaxPrice("");
     }
-    setFilters((prev) => ({ ...prev, priceRange: range }));
-  };
+  }, [filters.priceRange]);
 
+  useEffect(() => {
+    if (minPrice === "" && maxPrice === "") {
+      setFilters((prev) => ({ ...prev, priceRange: null }));
+    } else {
+      const min = minPrice === "" ? 0 : parseFloat(minPrice);
+      const max = maxPrice === "" ? Infinity : parseFloat(maxPrice);
+      setFilters((prev) => ({ ...prev, priceRange: [min, max] }));
+    }
+  }, [minPrice, maxPrice, setFilters]);
 
   const handleClearFilters = () => {
     setFilters({
@@ -41,32 +38,34 @@ const FilterBar = ({ filters, setFilters, category }) => {
   };
 
   return (
-
-    <div className="w-full max-w-6xl mx-auto px-4 py-4">
-
-      <div className="flex flex-wrap justify-center items-center gap-4">
-
-        <div className="flex flex-col items-center">
+    <div className="w-full py-4">
+      <div className="flex flex-wrap items-center gap-4 w-full">
+        <div className="flex flex-col items-center mr-60">
           <label className="font-medium">Price Range</label>
-          <select
-            onChange={handlePriceRangeChange}
-            defaultValue=""
-            className="border rounded px-2 py-1"
-          >
-            <option value="">All</option>
-            <option value="0-10">$0 - $10</option>
-            <option value="11-50">$11 - $50</option>
-            <option value="50-100">$50 - $100</option>
-            <option value="100-199">$100 - $199</option>
-            <option value="200-300">$200 - $300</option>
-            <option value="301++">$301+</option>
-          </select>
+          <div className="flex items-center">
+            <input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="border rounded px-2 py-0.5 mr-2"
+              min="0"
+            />
+            <span className="mx-1">-</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="border rounded px-2 py-0.5 ml-2"
+              min="0"
+            />
+          </div>
         </div>
 
-
         <div className="flex flex-col items-center">
-          <label className="font-medium">Stock</label>
-          <div className="flex gap-2">
+          <label className="text-xl font-medium -ml-27">Stock</label>
+          <div className="flex gap-2 mr-20">
             <button
               onClick={() =>
                 setFilters((prev) => ({
@@ -100,10 +99,9 @@ const FilterBar = ({ filters, setFilters, category }) => {
           </div>
         </div>
 
-
         {category === "sealed" && (
           <div className="flex flex-col items-center">
-            <label className="font-medium">Product Type</label>
+            <label className="text-xl font-medium">Product Type</label>
             <div className="flex flex-wrap gap-2">
               {[
                 "Booster Box",
@@ -121,7 +119,10 @@ const FilterBar = ({ filters, setFilters, category }) => {
                     setFilters((prev) => {
                       const current = prev.productTypes || [];
                       return current.includes(type)
-                        ? { ...prev, productTypes: current.filter((t) => t !== type) }
+                        ? {
+                            ...prev,
+                            productTypes: current.filter((t) => t !== type),
+                          }
                         : { ...prev, productTypes: [...current, type] };
                     })
                   }
@@ -140,8 +141,8 @@ const FilterBar = ({ filters, setFilters, category }) => {
 
         {category === "singles" && (
           <>
-            <div className="flex flex-col items-center">
-              <label className="font-medium">Condition</label>
+            <div className="flex flex-col items-center mr-20">
+              <label className="text-xl font-medium">Condition</label>
               <div className="flex gap-2">
                 {["Near Mint", "Light Play", "Moderate Play", "Heavy Play"].map(
                   (cond) => (
@@ -166,39 +167,45 @@ const FilterBar = ({ filters, setFilters, category }) => {
               </div>
             </div>
             <div className="flex flex-col items-center">
-              <label className="font-medium">Rarity</label>
+              <label className="text-xl font-medium">Rarity</label>
               <div className="flex gap-2">
-                {["Common", "Uncommon", "Rare", "Holo Rare", "Special Illustration Rare", "Hyper Rare"].map(
-                  (rarity) => (
-                    <button
-                      key={rarity}
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          rarity: prev.rarity === rarity ? "" : rarity,
-                        }))
-                      }
-                      className={`px-3 py-1 rounded border text-sm ${
-                        filters.rarity === rarity
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-700"
-                      }`}
-                    >
-                      {rarity}
-                    </button>
-                  )
-                )}
+                {[
+                  "Common",
+                  "Uncommon",
+                  "Rare",
+                  "Holo Rare",
+                  "Special Illustration Rare",
+                  "Hyper Rare",
+                ].map((rarity) => (
+                  <button
+                    key={rarity}
+                    onClick={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        rarity: prev.rarity === rarity ? "" : rarity,
+                      }))
+                    }
+                    className={`px-3 py-1 rounded border text-sm ${
+                      filters.rarity === rarity
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                  >
+                    {rarity}
+                  </button>
+                ))}
               </div>
             </div>
-
           </>
         )}
 
         {category === "graded" && (
           <>
             <div className="flex flex-col items-center">
-              <label className="font-medium">Grading Company</label>
-              <div className="flex gap-2">
+              <label className="text-xl font-medium -ml-20">
+                Grading Company
+              </label>
+              <div className="flex gap-2 mr-20">
                 {["PSA", "BGS", "CGC", "TAG"].map((company) => (
                   <button
                     key={company}
@@ -243,38 +250,35 @@ const FilterBar = ({ filters, setFilters, category }) => {
                 ))}
               </div>
             </div>
-
           </>
         )}
 
         {category === "accessories" && (
-          <>
-            <div className="flex flex-col items-center">
-              <label className="font-medium">Accessory Type</label>
-              <div className="flex gap-2">
-                {["Card Sleeves", "Top Loaders", "Deck Boxes", "Binders"].map(
-                  (type) => (
-                    <button
-                      key={type}
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          accessoryType: prev.accessoryType === type ? "" : type,
-                        }))
-                      }
-                      className={`px-3 py-1 rounded border text-sm ${
-                        filters.accessoryType === type
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-700"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  )
-                )}
-              </div>
+          <div className="flex flex-col items-center">
+            <label className="font-medium">Accessory Type</label>
+            <div className="flex gap-2">
+              {["Card Sleeves", "Top Loaders", "Deck Boxes", "Binders"].map(
+                (type) => (
+                  <button
+                    key={type}
+                    onClick={() =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        accessoryType: prev.accessoryType === type ? "" : type,
+                      }))
+                    }
+                    className={`px-3 py-1 rounded border text-sm ${
+                      filters.accessoryType === type
+                        ? "bg-blue-600 text-white"
+                        : "bg-white text-gray-700"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                )
+              )}
             </div>
-          </>
+          </div>
         )}
 
         <div className="flex flex-col items-center">
