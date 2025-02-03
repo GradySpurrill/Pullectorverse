@@ -9,7 +9,7 @@ const ShopGraded = ({ products }) => {
     gradingCompany: "",
     grade: "",
     rarity: "",
-    setName: "",
+    setOrExpansion: "",
     sortBy: "",
   });
 
@@ -31,11 +31,11 @@ const ShopGraded = ({ products }) => {
       return false;
     if (filters.grade && product.grade !== filters.grade) return false;
     if (filters.rarity && product.rarity !== filters.rarity) return false;
-    if (filters.setName && product.details?.set !== filters.setName)
-      return false;
+    if (filters.setOrExpansion && product.details) {
+      if (product.details.expansion !== filters.setOrExpansion) return false;
+    }
     return true;
   });
-
 
   if (filters.sortBy) {
     switch (filters.sortBy) {
@@ -52,11 +52,11 @@ const ShopGraded = ({ products }) => {
 
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
-      <h2 className="text-4xl font-bold text-center my-6">
+      <h2 className="text-4xl font-bold text-center my-6 text-cyan-950">
         Pokemon Graded Cards
       </h2>
       <FilterBar filters={filters} setFilters={setFilters} category="graded" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
         {filteredProducts.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}

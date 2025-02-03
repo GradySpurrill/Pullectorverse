@@ -3,7 +3,6 @@ import User from '../models/userModel.js';
 
 const router = express.Router();
 
-// Get user cart
 router.get('/:id/cart', async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate('cart.product');
@@ -13,7 +12,7 @@ router.get('/:id/cart', async (req, res) => {
   }
 });
 
-// Update user cart
+
 router.put('/:id/cart', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);

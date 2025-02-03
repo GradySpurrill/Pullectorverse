@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import ProductCard from "./components/ProductCard";
 import FilterBar from "./components/FilterBar";
 
@@ -14,31 +13,14 @@ const sealedCategories = [
   "Blister Pack",
 ];
 
-const ShopSealed = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+const ShopSealed = ({ products, loading, error }) => {
   const [filters, setFilters] = useState({
     inStock: null,
     priceRange: null,
     productTypes: [],
+    setOrExpansion: "",
     sortBy: "",
   });
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/products");
-        setProducts(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
 
   let filteredProducts = products.filter((product) =>
     sealedCategories.includes(product.category)
@@ -56,6 +38,11 @@ const ShopSealed = () => {
       !filters.productTypes.includes(product.category)
     )
       return false;
+    if (filters.setOrExpansion && product.details) {
+      if (product.details.expansion !== filters.setOrExpansion) {
+        return false;
+      }
+    }
     return true;
   });
 
@@ -82,7 +69,7 @@ const ShopSealed = () => {
 
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
-      <h2 className="text-4xl font-bold text-center my-6">
+      <h2 className="text-4xl font-bold text-center my-6 text-cyan-950">
         Sealed Pokemon Products
       </h2>
       <FilterBar filters={filters} setFilters={setFilters} category="sealed" />
@@ -91,7 +78,7 @@ const ShopSealed = () => {
       ) : error ? (
         <div className="text-center text-red-500">Error: {error}</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
           {filteredProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}

@@ -10,6 +10,7 @@ const Shop = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(""); 
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -39,6 +40,8 @@ const Shop = () => {
           <input
             type="text"
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="border px-4 py-3 w-full rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           />
         </div>
@@ -51,35 +54,35 @@ const Shop = () => {
         </div>
       </nav>
 
-      <div className="flex justify-center mt-6 px-4">
+      <div className="flex justify-center px-4">
         <div className="flex gap-4">
           <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              category === "sealed" ? "bg-gray-800 text-white" : "border"
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+              category === "sealed" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("sealed")}
           >
             Sealed Pokemon Product
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              category === "singles" ? "bg-gray-800 text-white" : "border"
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+              category === "singles" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("singles")}
           >
             Pokemon Singles
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              category === "graded" ? "bg-gray-800 text-white" : "border"
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+              category === "graded" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("graded")}
           >
             Pokemon Graded Cards
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              category === "accessories" ? "bg-gray-800 text-white" : "border"
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+              category === "accessories" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("accessories")}
           >
@@ -90,11 +93,35 @@ const Shop = () => {
 
       <div className="mt-8 px-4">
         {category === "sealed" && (
-          <ShopSealed products={products} loading={loading} error={error} />
+          <ShopSealed
+            products={products.filter((product) =>
+              product.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )}
+            loading={loading}
+            error={error}
+          />
         )}
-        {category === "singles" && <ShopSingles products={products} />}
-        {category === "graded" && <ShopGraded products={products} />}
-        {category === "accessories" && <ShopAccessories products={products} />}
+        {category === "singles" && (
+          <ShopSingles
+            products={products.filter((product) =>
+              product.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )}
+          />
+        )}
+        {category === "graded" && (
+          <ShopGraded
+            products={products.filter((product) =>
+              product.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )}
+          />
+        )}
+        {category === "accessories" && (
+          <ShopAccessories
+            products={products.filter((product) =>
+              product.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )}
+          />
+        )}
       </div>
     </div>
   );

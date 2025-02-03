@@ -8,15 +8,13 @@ const ShopSingles = ({ products }) => {
     priceRange: null,
     condition: "",
     rarity: "",
-    setName: "",
+    setOrExpansion: "",
     sortBy: "",
   });
-
 
   let filteredProducts = products.filter(
     (product) => product.category === "Ungraded Card"
   );
-
 
   filteredProducts = filteredProducts.filter((product) => {
     if (filters.priceRange) {
@@ -28,11 +26,11 @@ const ShopSingles = ({ products }) => {
     if (filters.condition && product.condition !== filters.condition)
       return false;
     if (filters.rarity && product.rarity !== filters.rarity) return false;
-    if (filters.setName && product.details?.set !== filters.setName)
-      return false;
+    if (filters.setOrExpansion && product.details) {
+      if (product.details.expansion !== filters.setOrExpansion) return false;
+    }
     return true;
   });
-
 
   if (filters.sortBy) {
     switch (filters.sortBy) {
@@ -49,13 +47,9 @@ const ShopSingles = ({ products }) => {
 
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
-      <h2 className="text-4xl font-bold text-center my-6">Pokemon Singles</h2>
-      <FilterBar
-        filters={filters}
-        setFilters={setFilters}
-        category="singles"
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <h2 className="text-4xl font-bold text-center my-6 text-cyan-950">Pokemon Singles</h2>
+      <FilterBar filters={filters} setFilters={setFilters} category="singles" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
         {filteredProducts.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}

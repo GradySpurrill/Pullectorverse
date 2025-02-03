@@ -57,6 +57,7 @@ const ProductSchema = new mongoose.Schema({
   // Shared 
   details: {
     set: { type: String, default: null },
+    expansion: { type: String, default: null },
     cardNumber: { type: String, default: null },
   }
 });

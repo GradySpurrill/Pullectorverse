@@ -50,13 +50,13 @@ const ShopAccessories = ({ products }) => {
 
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
-      <h2 className="text-4xl font-bold text-center my-6">Accessories</h2>
+      <h2 className="text-4xl font-bold text-center my-6 text-cyan-950">Accessories</h2>
       <FilterBar
         filters={filters}
         setFilters={setFilters}
         category="accessories"
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
         {filteredProducts.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}

@@ -4,12 +4,10 @@ import User from '../models/userModel.js';
 
 const router = express.Router();
 
-// Create an order
 router.post('/', async (req, res) => {
   try {
     const { userId, items, total, shippingAddress } = req.body;
 
-    // Create order
     const order = new Order({
       user: userId,
       items: items.map(item => ({
@@ -21,7 +19,6 @@ router.post('/', async (req, res) => {
       shippingAddress,
     });
 
-    // Clear user's cart
     const user = await User.findById(userId);
     user.cart = [];
     await user.save();

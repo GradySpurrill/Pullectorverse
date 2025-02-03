@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import Modal from "./productModal"; 
+import Modal from "./productModal";
 
 const ProductCard = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
 
   const handleIncrement = () => {
     setQuantity((prev) => Math.min(prev + 1, product.stock));
@@ -14,19 +13,26 @@ const ProductCard = ({ product }) => {
     setQuantity((prev) => Math.max(prev - 1, 1));
   };
 
+
   const imageStyle =
     product.category === "Booster Pack"
-      ? { width: "130px", height: "auto" }
+      ? { width: "auto", height: "175px" }
       : product.category === "Ungraded Card"
-      ? { width: "170px", height: "auto" }
+      ? { width: "auto", height: "160px" }
       : product.category === "Graded Card"
-      ? { width: "150px", height: "auto" }
+      ? { width: "auto", height: "175px" }
       : product.category === "Accessory"
-      ? { width: "160px", height: "auto" }
-      : { width: "170px", height: "auto" };
+      ? { width: "auto", height: "175px" }
+      : product.category === "Collection Box"
+      ? { width: "auto", height: "175px" }
+      : product.category === "Elite Trainer Box"
+      ? { width: "auto", height: "175px" }
+      : product.category === "Booster Bundle"
+      ? { width: "auto", height: "175px" }
+      : { width: "auto", height: "175px" };
 
   return (
-    <div className="border p-4 rounded-lg shadow-lg text-center bg-white w-[575px] h-[575px] flex flex-col justify-between">
+    <div className=" text-cyan-950 p-4 rounded-lg  text-center bg-white w-[275px] h-[475px] flex flex-col justify-between">
       <div
         className="h-60 flex items-center justify-center text-gray-500 text-lg font-semibold cursor-pointer"
         onClick={() => setIsModalOpen(true)}
@@ -39,28 +45,48 @@ const ProductCard = ({ product }) => {
         />
       </div>
 
-      <h3 className="mt-4 font-semibold text-lg">{product.name}</h3>
+      <h3 className="mt-4 font-semibold text-medium">{product.name}</h3>
       <p className="text-gray-600 text-lg mt-1">${product.price.toFixed(2)}</p>
-      <div className="mt-4 flex items-center justify-between bg-gray-100 rounded-lg p-2">
+
+      {product.category === "Ungraded Card" && (
+        <div className="mt-2 flex justify-center gap-2">
+          <span className="text-xs font-medium">Condition: {product.condition}</span>
+          <span className="text-xs font-medium">Rarity: {product.rarity}</span>
+        </div>
+      )}
+      {product.category === "Graded Card" && (
+        <div className="mt-2 flex justify-center gap-2">
+          <span className="text-xs font-medium">Grading Company: {product.gradingCompany}</span>
+          <span className="text-xs font-medium">Grade: {product.grade}</span>
+        </div>
+      )}
+      {product.category === "Accessory" && (
+        <div className="mt-2 flex justify-center gap-2">
+          <span className="text-xs font-medium">Type: {product.accessoryType}</span>
+          <span className="text-xs font-medium">{product.quantityPerPack} per pack</span>
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center justify-between rounded-lg p-2">
         <span className="text-sm text-gray-600">In Stock: {product.stock}</span>
       </div>
       <div className="mt-4 flex items-center justify-between">
         <button
           onClick={handleDecrement}
-          className="bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300"
+          className="px-3 py-1 text-3xl rounded-lg hover:bg-cyan-800"
         >
           -
         </button>
         <span className="text-lg font-medium">{quantity}</span>
         <button
           onClick={handleIncrement}
-          className="bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300"
+          className="px-3 py-1 text-2xl rounded-lg hover:bg-cyan-800"
         >
           +
         </button>
       </div>
       <button
-        className="mt-4 bg-gray-900 text-white px-4 py-2 rounded-lg w-full text-lg font-medium hover:bg-gray-700"
+        className="mt-4 bg-cyan-950 text-white px-4 py-2 rounded-lg w-full text-lg font-medium hover:bg-gray-700"
         onClick={() => console.log("Add to cart:", product._id, quantity)}
       >
         Add to Cart ({quantity})
@@ -129,8 +155,7 @@ const ProductCard = ({ product }) => {
                     <strong>Accessory Type:</strong> {product.accessoryType}
                   </p>
                   <p className="mb-2">
-                    <strong>Quantity Per Pack:</strong>{" "}
-                    {product.quantityPerPack}
+                    <strong>Quantity Per Pack:</strong> {product.quantityPerPack}
                   </p>
                 </>
               )}
