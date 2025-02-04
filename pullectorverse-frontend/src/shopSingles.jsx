@@ -40,7 +40,7 @@ const ShopSingles = ({ products }) => {
       case "priceHighLow":
         filteredProducts.sort((a, b) => b.price - a.price);
         break;
-      default:
+        default:
         break;
     }
   }
@@ -53,7 +53,7 @@ const ShopSingles = ({ products }) => {
         {filteredProducts.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}
-      </div>
+        </div>
     </div>
   );
 };

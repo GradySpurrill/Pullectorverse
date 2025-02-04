@@ -4,6 +4,10 @@ import ShopSealed from "./ShopSealed";
 import ShopSingles from "./ShopSingles";
 import ShopGraded from "./ShopGraded";
 import ShopAccessories from "./ShopAccessories";
+import { Link } from "react-router-dom";
+import { useCart } from "./components/cartContext";
+
+
 
 const Shop = () => {
   const [category, setCategory] = useState("sealed");
@@ -11,6 +15,8 @@ const Shop = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(""); 
+  const { cartItems } = useCart();
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -31,9 +37,9 @@ const Shop = () => {
       <nav className="flex justify-between items-center p-4 bg-white">
         <div className="flex items-center">
           <img
-            src="PVLOGOBASE.png"
+            src="PVLOGOBASEV3.png"
             alt="Pullectorverse Logo"
-            className="w-95 h-25"
+            className="w-95 h-13"
           />
         </div>
         <div className="relative w-1/3">
@@ -42,22 +48,30 @@ const Shop = () => {
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border px-4 py-3 w-full rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="border px-4 py-3 w-full rounded-lg shadow-sm text-cyan-900 focus:outline-none"
           />
         </div>
-        <div className="flex gap-6 text-gray-700 text-lg">
+        <div className="flex gap-6 text-cyan-900 text-lg">
           <button>Account</button>
           <button>Shop</button>
           <button>Rip on Stream</button>
-          <button>Cart</button>
+          <Link to="/cart" className="relative flex items-center">
+            Cart
+            {totalItems > 0 && (
+              <span className="ml-1 px-2 py-1 bg-red-600 text-white text-xs rounded-full">
+                {totalItems}
+              </span>
+            )}
+          </Link>
           <button>CAD</button>
         </div>
       </nav>
 
+
       <div className="flex justify-center px-4">
         <div className="flex gap-4">
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
               category === "sealed" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("sealed")}
@@ -65,7 +79,7 @@ const Shop = () => {
             Sealed Pokemon Product
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
               category === "singles" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("singles")}
@@ -73,7 +87,7 @@ const Shop = () => {
             Pokemon Singles
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
               category === "graded" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("graded")}
@@ -81,7 +95,7 @@ const Shop = () => {
             Pokemon Graded Cards
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 ${
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
               category === "accessories" ? "bg-cyan-950 text-white" : "border"
             }`}
             onClick={() => setCategory("accessories")}
