@@ -1,207 +1,225 @@
-// src/components/ThreeHome.jsx
-import React, { Suspense, useState, useRef } from "react";
+import React, { Suspense, useRef, useMemo, useEffect, useCallback, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three"; // needed for Vector3, Quaternion, etc.
+import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useSpring, animated } from "@react-spring/three";
 
-/**
- * Project 2D mouse coords onto a virtual sphere (arcball).
- */
+window.THREE = THREE;
+
+const MOUSE_SENSITIVITY = 4;
+const MOMENTUM_DAMPING = 0.97;
+const MIN_MOMENTUM = 0.0001;
+const ROTATION_MIX_FACTOR = 0.3;
+const BASE_SCALE = 7;
+
 function projectOnBall(clientX, clientY, width, height) {
-  let x = (clientX / width) * 2 - 1;
-  let y = (clientY / height) * -2 + 1; // invert Y
-  const len2 = x * x + y * y;
-  if (len2 > 1) {
-    const scale = 1 / Math.sqrt(len2);
-    x *= scale;
-    y *= scale;
-    return new THREE.Vector3(x, y, 0);
-  } else {
-    const z = Math.sqrt(1 - len2);
-    return new THREE.Vector3(x, y, z);
-  }
+  const x = (clientX / width) * 2 - 1;
+  const y = (clientY / height) * -2 + 1;
+  const length = Math.min(1, Math.sqrt(x * x + y * y));
+  return new THREE.Vector3(x, y, Math.sqrt(1 - length * length));
 }
 
-// 1) Logo above the ball
 function LogoModel() {
-  const { scene } = useGLTF("/models/3DLogoForward.glb");
-  scene.position.set(0, 2.5, 0);
-  scene.scale.set(1, 1, 1);
-  return <primitive object={scene} />;
+  const { scene } = useGLTF("/models/LOGO.glb");
+  return <primitive object={scene} position={[0, 3, 3.5]} />;
 }
 
-/**
- * 2) Pokeball with arcball drag + momentum + pointer capture
- *    tuned to spin slowly & not stop too fast.
- */
 function PokeballModel() {
-  const { scene } = useGLTF("/models/pullectorsphere.glb");
-  scene.position.set(0, 0, 0);
-  scene.scale.set(5, 5, 5);
+  const { scene } = useGLTF("/models/pullectorsphereF.glb");
+  const meshRef = useRef();
+  const isDragging = useRef(false);
+  const lastPos = useRef(new THREE.Vector3());
+  const momentum = useRef({ axis: new THREE.Vector3(), angle: 0 });
+  const targetQuat = useRef(new THREE.Quaternion());
+  
+  // Reusable objects
+  const tempAxis = useMemo(() => new THREE.Vector3(), []);
+  const tempQuat = useMemo(() => new THREE.Quaternion(), []);
+  const currentQuat = useMemo(() => new THREE.Quaternion(), []);
 
-  const meshRef = useRef(scene);
+  const handleMove = (clientX, clientY) => {
+    if (!isDragging.current) return;
+    
+    const newPos = projectOnBall(clientX, clientY, window.innerWidth, window.innerHeight);
+    tempAxis.crossVectors(lastPos.current, newPos).normalize();
+    const angle = lastPos.current.angleTo(newPos) * MOUSE_SENSITIVITY * 1.5;
+    
+    if (angle > 0.0001) {
+      tempQuat.setFromAxisAngle(tempAxis, angle);
+      targetQuat.current.premultiply(tempQuat);
+      momentum.current.axis.copy(tempAxis);
+      momentum.current.angle = angle;
+    }
+    
+    lastPos.current.copy(newPos);
+  };
 
-  // Drag states
-  const [isDragging, setIsDragging] = useState(false);
-  const lastSpherePos = useRef(null);
+  const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    handleMove(e.touches[0].clientX, e.touches[0].clientY);
+  };
 
-  // Momentum states
-  const [momentum, setMomentum] = useState({
-    axis: new THREE.Vector3(0, 0, 0),
-    angle: 0,
-  });
-  const [applyMomentum, setApplyMomentum] = useState(false);
-
-  // When user clicks the ball
-  function handlePointerDown(e) {
+  const handlePointerDown = (e) => {
     e.stopPropagation();
-    e.target.setPointerCapture(e.pointerId);
+    isDragging.current = true;
+    momentum.current.angle = 0;
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    lastPos.current.copy(projectOnBall(clientX, clientY, window.innerWidth, window.innerHeight));
 
-    setIsDragging(true);
-    setApplyMomentum(false);
-    lastSpherePos.current = projectOnBall(
-      e.clientX,
-      e.clientY,
-      window.innerWidth,
-      window.innerHeight
-    );
-  }
+    // Add global listeners
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handlePointerUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handlePointerUp);
+  };
 
-  // While dragging, compute arc rotation
-  function handlePointerMove(e) {
-    if (!isDragging || !lastSpherePos.current) return;
-    e.stopPropagation();
+  const handlePointerUp = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    
+    // Remove global listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handlePointerUp);
+    document.removeEventListener('touchmove', handleTouchMove, { passive: false });
+    document.removeEventListener('touchend', handlePointerUp);
+  };
 
-    const newSpherePos = projectOnBall(
-      e.clientX,
-      e.clientY,
-      window.innerWidth,
-      window.innerHeight
-    );
+  useFrame((state, delta) => {
+    if (!meshRef.current) return;
 
-    // axis = cross, angle = acos(dot)
-    const axis = new THREE.Vector3().crossVectors(
-      lastSpherePos.current,
-      newSpherePos
-    );
-    let dot = lastSpherePos.current.dot(newSpherePos);
-    dot = Math.min(Math.max(dot, -1), 1);
-    let angle = Math.acos(dot);
+    // Apply rotation mixing
+    currentQuat.slerp(targetQuat.current, ROTATION_MIX_FACTOR);
+    meshRef.current.quaternion.copy(currentQuat);
 
-    // Lower speedFactor => slower drag rotation
-    const speedFactor = 2.0; // adjust to your liking
-    angle *= speedFactor;
-
-    // Build quaternion
-    const q = new THREE.Quaternion();
-    axis.normalize();
-    q.setFromAxisAngle(axis, angle);
-
-    // Apply rotation
-    meshRef.current.quaternion.premultiply(q);
-
-    // Store axis+angle for momentum
-    setMomentum({ axis: axis.clone(), angle });
-
-    // Update last sphere pos
-    lastSpherePos.current = newSpherePos;
-  }
-
-  // On release, enable momentum
-  function handlePointerUp(e) {
-    e.stopPropagation();
-    e.target.releasePointerCapture(e.pointerId);
-    setIsDragging(false);
-    lastSpherePos.current = null;
-    setApplyMomentum(true);
-  }
-
-  function handlePointerCancel() {
-    setIsDragging(false);
-    lastSpherePos.current = null;
-    setApplyMomentum(false);
-  }
-
-  // useFrame: apply momentum if enabled
-  useFrame(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
-
-    if (applyMomentum && !isDragging) {
-      let { axis, angle } = momentum;
-
-      if (angle < 0.0001) {
-        setApplyMomentum(false);
-        return;
-      }
-
-      const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-      mesh.quaternion.premultiply(q);
-
-      // Higher friction => slower stop => spins longer
-      const friction = 0.99; 
-      angle *= friction;
-
-      setMomentum({ axis, angle });
+    // Apply momentum when not dragging
+    if (!isDragging.current && momentum.current.angle > MIN_MOMENTUM) {
+      tempQuat.setFromAxisAngle(momentum.current.axis, momentum.current.angle * delta * 60);
+      targetQuat.current.premultiply(tempQuat);
+      momentum.current.angle *= MOMENTUM_DAMPING;
     }
   });
+
+  useEffect(() => {
+    return () => {
+      // Cleanup listeners on unmount
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handlePointerUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handlePointerUp);
+    };
+  }, []);
 
   return (
     <primitive
       object={scene}
       ref={meshRef}
+      castShadow
+      receiveShadow
+      scale={[BASE_SCALE, BASE_SCALE, BASE_SCALE]}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerOut={handlePointerCancel}
-      onPointerCancel={handlePointerCancel}
+      onTouchStart={handlePointerDown}
+    />
+  );
+}
+function ShopButtonModel() {
+  const { scene } = useGLTF("/models/Shop.glb");
+  const meshRef = useRef();
+  const navigate = useNavigate();
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+
+  const { scale } = useSpring({
+    scale: clicked ? 0.8 : hovered ? 1.2 : 1.5,
+    config: { tension: 300, friction: 10 },
+    onRest: () => {
+      if (clicked) {
+        setClicked(false);
+        navigate("/shop");
+      }
+    },
+  });
+
+  return (
+    <animated.primitive
+      object={scene}
+      ref={meshRef}
+      position={[0, -6, -3]}
+      scale={scale}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      onClick={() => setClicked(true)}
     />
   );
 }
 
-// 3) Main component
 export default function ThreeHome() {
-  return (
-    <>
-      <Canvas
-        style={{ width: "100%", height: "100vh" }}
-        camera={{ position: [0, 2.5, 10], fov: 50 }}
-      >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 10, 5]} intensity={1} />
+  const backgroundRef = useRef(null);
 
+  useEffect(() => {
+    const loadScripts = async () => {
+      if (!window.p5) {
+        const scriptP5 = document.createElement("script");
+        scriptP5.src = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js";
+        scriptP5.async = true;
+        document.body.appendChild(scriptP5);
+        await new Promise((resolve) => (scriptP5.onload = resolve));
+      }
+
+      if (!window.VANTA || !window.VANTA.DOTS) {
+        const scriptVanta = document.createElement("script");
+        scriptVanta.src = "https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.dots.min.js";
+        scriptVanta.async = true;
+        document.body.appendChild(scriptVanta);
+        await new Promise((resolve) => (scriptVanta.onload = resolve));
+      }
+
+      if (window.VANTA && window.VANTA.DOTS && backgroundRef.current) {
+        backgroundRef.current.vantaEffect = window.VANTA.DOTS({
+          el: backgroundRef.current,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: window.innerHeight,
+          minWidth: window.innerWidth,
+          scale: 1.0,
+          scaleMobile: 1.0,
+          backgroundColor: 0x222222,
+          color: 0xe5a64,
+          color2: 0x84848,
+          size: 3,
+          spacing: 35,
+          showLines: true,
+          THREE: window.THREE,
+        });
+      }
+    };
+
+    loadScripts();
+
+    return () => {
+      if (backgroundRef.current?.vantaEffect) {
+        backgroundRef.current.vantaEffect.destroy();
+      }
+    };
+  }, []);
+
+  return (
+    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
+      <div ref={backgroundRef} style={{ position: "absolute", width: "100vw", height: "100vh", zIndex: -1 }}></div>
+      <Canvas camera={{ position: [0, 2.5, 10], fov: 50 }}>
+        <ambientLight intensity={2} />
+        <directionalLight position={[5, 10, 5]} intensity={1} castShadow shadow-mapSize={2048} />
         <Suspense fallback={null}>
           <PokeballModel />
           <LogoModel />
+          <ShopButtonModel /> {/* ✅ 3D Shop Button is now working */}
         </Suspense>
       </Canvas>
-
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10,
-        }}
-      >
-        <Link to="/shop">
-          <button
-            style={{
-              fontSize: "1rem",
-              padding: "0.8rem 1.2rem",
-              background: "#333",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            Go to Shop
-          </button>
-        </Link>
-      </div>
-    </>
+    </div>
   );
 }
