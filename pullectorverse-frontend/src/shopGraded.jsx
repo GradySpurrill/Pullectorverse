@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ProductCard from "./components/ProductCard";
 import FilterBar from "./components/FilterBar";
+import gsap from "gsap";
 
 const ShopGraded = ({ products }) => {
   const [filters, setFilters] = useState({
@@ -50,13 +51,28 @@ const ShopGraded = ({ products }) => {
     }
   }
 
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    if (gridRef.current && filteredProducts.length > 0) {
+      gsap.fromTo(
+        gridRef.current.children,
+        { x: -100, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.5, stagger: 0.18, ease: "power2.out" }
+      );
+    }
+  }, [filteredProducts]);
+
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
       <h2 className="text-4xl font-bold text-center my-6 text-cyan-950">
         Pokemon Graded Cards
       </h2>
       <FilterBar filters={filters} setFilters={setFilters} category="graded" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+      <div
+        ref={gridRef}
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8"
+      >
         {filteredProducts.map((product) => (
           <ProductCard key={product._id} product={product} />
         ))}

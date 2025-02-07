@@ -48,7 +48,7 @@ const ProductCard = ({ product }) => {
       </div>
 
       <h3 className="mt-4 font-semibold text-medium">{product.name}</h3>
-      <p className="text-gray-600 text-lg mt-1">${product.price.toFixed(2)}</p>
+      
 
       {product.category === "Ungraded Card" && (
         <div className="mt-2 flex justify-center gap-2">
@@ -80,6 +80,7 @@ const ProductCard = ({ product }) => {
       )}
 
       <div className="mt-4 flex items-center justify-between rounded-lg p-2">
+      <p className="text-gray-600 text-lg mt-1">${product.price.toFixed(2)}</p>
         <span className="text-sm text-gray-600">In Stock: {product.stock}</span>
       </div>
 

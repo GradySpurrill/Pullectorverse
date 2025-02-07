@@ -1,9 +1,17 @@
-import React, { Suspense, useRef, useMemo, useEffect, useCallback, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import React, {
+  Suspense,
+  useRef,
+  useMemo,
+  useEffect,
+  useState
+} from "react";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "@react-spring/three";
+import gsap from "gsap";
+import { TextureLoader } from "three";
 
 window.THREE = THREE;
 
@@ -20,6 +28,7 @@ function projectOnBall(clientX, clientY, width, height) {
   return new THREE.Vector3(x, y, Math.sqrt(1 - length * length));
 }
 
+
 function LogoModel() {
   const { scene } = useGLTF("/models/LOGO.glb");
   return <primitive object={scene} position={[0, 3, 3.5]} />;
@@ -33,132 +42,183 @@ function PokeballModel() {
   const momentum = useRef({ axis: new THREE.Vector3(), angle: 0 });
   const targetQuat = useRef(new THREE.Quaternion());
   
-  // Reusable objects
   const tempAxis = useMemo(() => new THREE.Vector3(), []);
   const tempQuat = useMemo(() => new THREE.Quaternion(), []);
   const currentQuat = useMemo(() => new THREE.Quaternion(), []);
 
-  const handleMove = (clientX, clientY) => {
+  const handlePointerDown = (e) => {
+    e.stopPropagation();
+    e.target.setPointerCapture(e.pointerId);
+    isDragging.current = true;
+    momentum.current.angle = 0;
+    lastPos.current.copy(
+      projectOnBall(e.clientX, e.clientY, window.innerWidth, window.innerHeight)
+    );
+  };
+
+  const handlePointerMove = (e) => {
     if (!isDragging.current) return;
     
-    const newPos = projectOnBall(clientX, clientY, window.innerWidth, window.innerHeight);
-    tempAxis.crossVectors(lastPos.current, newPos).normalize();
-    const angle = lastPos.current.angleTo(newPos) * MOUSE_SENSITIVITY * 1.5;
+    const newPos = projectOnBall(e.clientX, e.clientY, window.innerWidth, window.innerHeight);
+    tempAxis.crossVectors(lastPos.current, newPos);
     
-    if (angle > 0.0001) {
-      tempQuat.setFromAxisAngle(tempAxis, angle);
-      targetQuat.current.premultiply(tempQuat);
-      momentum.current.axis.copy(tempAxis);
-      momentum.current.angle = angle;
-    }
+    if (tempAxis.length() < 0.000001) return;
+    tempAxis.normalize();
+    
+    const angle = lastPos.current.angleTo(newPos) * MOUSE_SENSITIVITY;
+    
+    tempQuat.setFromAxisAngle(tempAxis, angle);
+    targetQuat.current.premultiply(tempQuat);
+    momentum.current.axis.copy(tempAxis);
+    momentum.current.angle = angle;
     
     lastPos.current.copy(newPos);
   };
 
-  const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-    handleMove(e.touches[0].clientX, e.touches[0].clientY);
-  };
-
-  const handlePointerDown = (e) => {
+  const handlePointerUp = (e) => {
     e.stopPropagation();
-    isDragging.current = true;
-    momentum.current.angle = 0;
-    
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    lastPos.current.copy(projectOnBall(clientX, clientY, window.innerWidth, window.innerHeight));
-
-    // Add global listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handlePointerUp);
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handlePointerUp);
-  };
-
-  const handlePointerUp = () => {
-    if (!isDragging.current) return;
+    e.target.releasePointerCapture(e.pointerId);
     isDragging.current = false;
-    
-    // Remove global listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handlePointerUp);
-    document.removeEventListener('touchmove', handleTouchMove, { passive: false });
-    document.removeEventListener('touchend', handlePointerUp);
   };
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
 
-    // Apply rotation mixing
     currentQuat.slerp(targetQuat.current, ROTATION_MIX_FACTOR);
     meshRef.current.quaternion.copy(currentQuat);
 
-    // Apply momentum when not dragging
     if (!isDragging.current && momentum.current.angle > MIN_MOMENTUM) {
-      tempQuat.setFromAxisAngle(momentum.current.axis, momentum.current.angle * delta * 60);
+      tempQuat.setFromAxisAngle(
+        momentum.current.axis,
+        momentum.current.angle * delta * 80
+      );
       targetQuat.current.premultiply(tempQuat);
       momentum.current.angle *= MOMENTUM_DAMPING;
     }
   });
 
-  useEffect(() => {
-    return () => {
-      // Cleanup listeners on unmount
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handlePointerUp);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handlePointerUp);
-    };
-  }, []);
-
   return (
-    <primitive
-      object={scene}
-      ref={meshRef}
-      castShadow
-      receiveShadow
-      scale={[BASE_SCALE, BASE_SCALE, BASE_SCALE]}
-      onPointerDown={handlePointerDown}
-      onTouchStart={handlePointerDown}
-    />
+    <group>
+      <mesh
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        <sphereGeometry args={[BASE_SCALE, 16, 16]} />
+        <meshBasicMaterial visible={false} />
+      </mesh>
+      <primitive
+        object={scene}
+        ref={meshRef}
+        castShadow
+        receiveShadow
+        scale={[BASE_SCALE, BASE_SCALE, BASE_SCALE]}
+      />
+    </group>
   );
 }
-function ShopButtonModel() {
+
+function ShopButtonModel({ onShopClick }) {
   const { scene } = useGLTF("/models/Shop.glb");
-  const meshRef = useRef();
-  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-
   const { scale } = useSpring({
-    scale: clicked ? 0.8 : hovered ? 1.2 : 1.5,
-    config: { tension: 300, friction: 10 },
+    scale: clicked ? 1.4 : hovered ? 1.8 : 1.5,
+    config: {
+      tension: clicked ? 600 : hovered ? 400 : 300,
+      friction: 20,
+    },
     onRest: () => {
       if (clicked) {
-        setClicked(false);
-        navigate("/shop");
+        onShopClick && onShopClick();
       }
     },
   });
-
   return (
-    <animated.primitive
-      object={scene}
-      ref={meshRef}
-      position={[0, -6, -3]}
-      scale={scale}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-      onClick={() => setClicked(true)}
-    />
+    <animated.group scale={scale} position={[0, -6, -3]}>
+
+      <primitive object={scene} />
+
+      <mesh
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={() => setClicked(true)}
+      >
+        <boxGeometry args={[2.2, 0.2, 1]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+    </animated.group>
   );
 }
 
+function ShopPreview({ meshRef }) {
+  const texture = useLoader(TextureLoader, "/shop_preview.png");
+
+  return (
+    <mesh ref={meshRef} position={[0, -4, -20]}>
+      <planeGeometry args={[10, (10 * 9) / 16]} />
+      <meshBasicMaterial map={texture} transparent opacity={0} />
+    </mesh>
+  );
+}
+
+function CameraFlyThrough({ onComplete, shopPreviewRef }) {
+  const { camera } = useThree();
+
+  const shopPreviewPosition = new THREE.Vector3(0, -4, -20);
+  
+  useEffect(() => {
+    const startPoint = camera.position.clone();
+    const initialLookAt = camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()));
+
+    const cp1 = startPoint;
+    const cp2 = new THREE.Vector3(0, 2, 9); 
+    const cp3 = new THREE.Vector3(0, -4, -9.5); 
+    const curve = new THREE.CatmullRomCurve3([cp1, cp2, cp3]);
+    
+    const progress = { t: 0 };
+    let shopPreviewShown = false;
+    
+    gsap.to(progress, {
+      t: 1,
+      duration: 2.5, 
+      ease: "power2.inOut",
+      onUpdate: () => {
+        const point = curve.getPointAt(progress.t);
+        camera.position.copy(point);
+
+        const interpolatedLookAt = new THREE.Vector3().lerpVectors(initialLookAt, shopPreviewPosition, progress.t);
+        camera.lookAt(interpolatedLookAt);
+        
+
+        camera.fov = THREE.MathUtils.lerp(50, 30, progress.t);
+        camera.updateProjectionMatrix();
+
+        if (!shopPreviewShown && progress.t >= 0.4 && shopPreviewRef.current) {
+          shopPreviewShown = true;
+          gsap.to(shopPreviewRef.current.material, {
+            opacity: 1,
+            duration: 0.5,
+            ease: "power2.inOut",
+          });
+        }
+      },
+      onComplete: () => {
+        onComplete && onComplete();
+      },
+    });
+  }, [camera, onComplete, shopPreviewRef]);
+  
+  return null;
+}
+
+
 export default function ThreeHome() {
   const backgroundRef = useRef(null);
+  const [flyThroughActive, setFlyThroughActive] = useState(false);
+  const navigate = useNavigate();
+  const shopPreviewRef = useRef(); 
 
   useEffect(() => {
     const loadScripts = async () => {
@@ -169,7 +229,6 @@ export default function ThreeHome() {
         document.body.appendChild(scriptP5);
         await new Promise((resolve) => (scriptP5.onload = resolve));
       }
-
       if (!window.VANTA || !window.VANTA.DOTS) {
         const scriptVanta = document.createElement("script");
         scriptVanta.src = "https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.dots.min.js";
@@ -177,12 +236,11 @@ export default function ThreeHome() {
         document.body.appendChild(scriptVanta);
         await new Promise((resolve) => (scriptVanta.onload = resolve));
       }
-
       if (window.VANTA && window.VANTA.DOTS && backgroundRef.current) {
         backgroundRef.current.vantaEffect = window.VANTA.DOTS({
           el: backgroundRef.current,
-          mouseControls: true,
-          touchControls: true,
+          mouseControls: false,
+          touchControls: false,
           gyroControls: false,
           minHeight: window.innerHeight,
           minWidth: window.innerWidth,
@@ -193,7 +251,7 @@ export default function ThreeHome() {
           color2: 0x84848,
           size: 3,
           spacing: 35,
-          showLines: true,
+          showLines: false,
           THREE: window.THREE,
         });
       }
@@ -208,16 +266,39 @@ export default function ThreeHome() {
     };
   }, []);
 
+  const handleShopClick = () => {
+    setFlyThroughActive(true);
+  };
+
+  const handleCameraComplete = () => {
+    navigate("/shop");
+  };
+
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
-      <div ref={backgroundRef} style={{ position: "absolute", width: "100vw", height: "100vh", zIndex: -1 }}></div>
+      <div
+        ref={backgroundRef}
+        style={{ position: "absolute", width: "100vw", height: "100vh", zIndex: -1 }}
+      ></div>
       <Canvas camera={{ position: [0, 2.5, 10], fov: 50 }}>
         <ambientLight intensity={2} />
-        <directionalLight position={[5, 10, 5]} intensity={1} castShadow shadow-mapSize={2048} />
+        <directionalLight
+          position={[5, 10, 5]}
+          intensity={1}
+          castShadow
+          shadow-mapSize={2048}
+        />
         <Suspense fallback={null}>
           <PokeballModel />
           <LogoModel />
-          <ShopButtonModel /> {/* ✅ 3D Shop Button is now working */}
+          <ShopButtonModel onShopClick={handleShopClick} />
+          <ShopPreview meshRef={shopPreviewRef} />
+          {flyThroughActive && (
+            <CameraFlyThrough
+              shopPreviewRef={shopPreviewRef}
+              onComplete={handleCameraComplete}
+            />
+          )}
         </Suspense>
       </Canvas>
     </div>
