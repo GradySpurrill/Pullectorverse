@@ -8,6 +8,11 @@ import { Link } from "react-router-dom";
 import { useCart } from "./components/cartContext";
 import gsap from "gsap";
 
+const conversionRates = {
+  CAD: 1,
+  USD: 0.75, // 1 CAD = 0.75 USD
+};
+
 const Shop = () => {
   const [category, setCategory] = useState("sealed");
   const [products, setProducts] = useState([]);
@@ -16,8 +21,10 @@ const Shop = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { cartItems } = useCart();
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
   const contentRef = useRef(null);
+
+  // Currency State (Default: CAD, Stored in localStorage)
+  const [currency, setCurrency] = useState(localStorage.getItem("currency") || "CAD");
 
   useEffect(() => {
     if (contentRef.current) {
@@ -64,6 +71,13 @@ const Shop = () => {
     fetchProducts();
   }, []);
 
+  // Handle currency change
+  const handleCurrencyChange = (event) => {
+    const newCurrency = event.target.value;
+    setCurrency(newCurrency);
+    localStorage.setItem("currency", newCurrency);
+  };
+
   return (
     <div className="min-h-screen bg-white text-black px-6 pb-10">
       <nav className="flex justify-between items-center p-4 bg-white">
@@ -91,70 +105,65 @@ const Shop = () => {
               </span>
             )}
           </Link>
-          <button>CAD</button>
+
+          <div className="relative">
+            <select
+              value={currency}
+              onChange={handleCurrencyChange}
+              className="px-2 py-2 rounded-lg font-medium text-cyan-950 bg-white cursor-pointer focus:outline-none"
+            >
+              <option value="CAD">CAD</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
         </div>
       </nav>
 
       <div className="flex justify-center px-4 mt-4">
         <div className="flex gap-4">
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${category === "sealed" ? "bg-cyan-950 text-white" : "border"}`}
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
+              category === "sealed" ? "bg-cyan-950 text-white" : "border"
+            }`}
             onClick={() => handleCategoryChange("sealed")}
           >
             Sealed Pokemon Product
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${category === "singles" ? "bg-cyan-950 text-white" : "border"}`}
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
+              category === "singles" ? "bg-cyan-950 text-white" : "border"
+            }`}
             onClick={() => handleCategoryChange("singles")}
           >
             Pokemon Singles
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${category === "graded" ? "bg-cyan-950 text-white" : "border"}`}
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
+              category === "graded" ? "bg-cyan-950 text-white" : "border"
+            }`}
             onClick={() => handleCategoryChange("graded")}
           >
             Pokemon Graded Cards
           </button>
           <button
-            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${category === "accessories" ? "bg-cyan-950 text-white" : "border"}`}
+            className={`px-4 py-2 rounded-lg font-medium text-cyan-950 shadow-sm ${
+              category === "accessories" ? "bg-cyan-950 text-white" : "border"
+            }`}
             onClick={() => handleCategoryChange("accessories")}
           >
             Accessories
           </button>
         </div>
       </div>
+
       <div ref={contentRef}>
         <div className="mt-8 px-4">
           {category === "sealed" && (
-            <ShopSealed
-              products={products.filter((product) =>
-                product.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )}
-              loading={loading}
-              error={error}
-            />
-          )}
-          {category === "singles" && (
-            <ShopSingles
-              products={products.filter((product) =>
-                product.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )}
-            />
-          )}
-          {category === "graded" && (
-            <ShopGraded
-              products={products.filter((product) =>
-                product.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )}
-            />
-          )}
-          {category === "accessories" && (
-            <ShopAccessories
-              products={products.filter((product) =>
-                product.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )}
-            />
-          )}
+            <ShopSealed products={products} loading={loading} error={error} currency={currency} />
+)}
+          {category === "singles" && <ShopSingles products={products} currency={currency} />}
+          {category === "graded" && <ShopGraded products={products} currency={currency} />}
+          {category === "accessories" && <ShopAccessories products={products} currency={currency} />}
         </div>
       </div>
     </div>

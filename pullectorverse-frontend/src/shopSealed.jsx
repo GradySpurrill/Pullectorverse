@@ -14,7 +14,7 @@ const sealedCategories = [
   "Blister Pack",
 ];
 
-const ShopSealed = ({ products, loading, error }) => {
+const ShopSealed = ({ products, loading, error, currency }) => {
   const [filters, setFilters] = useState({
     inStock: null,
     priceRange: null,
@@ -88,7 +88,7 @@ const ShopSealed = ({ products, loading, error }) => {
       ) : (
         <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
           {filteredProducts.map((product) => (
-            <ProductCard key={product._id} product={product} />
+            <ProductCard key={product._id} product={product} currency={currency} />
           ))}
         </div>
       )}

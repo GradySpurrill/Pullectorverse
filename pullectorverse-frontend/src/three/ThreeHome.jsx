@@ -13,6 +13,8 @@ import { useSpring, animated } from "@react-spring/three";
 import gsap from "gsap";
 import { TextureLoader } from "three";
 
+
+
 window.THREE = THREE;
 
 const MOUSE_SENSITIVITY = 4;
@@ -20,6 +22,46 @@ const MOMENTUM_DAMPING = 0.97;
 const MIN_MOMENTUM = 0.0001;
 const ROTATION_MIX_FACTOR = 0.3;
 const BASE_SCALE = 7;
+
+function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(window.WebGLRenderingContext && canvas.getContext("webgl"));
+  } catch (e) {
+    return false;
+  }
+}
+
+// Performance Check: Detect Low-End Devices
+function isLowEndDevice() {
+  return navigator.hardwareConcurrency < 4 || navigator.deviceMemory < 4;
+}
+
+// FPS Monitoring Function
+function monitorFPS(navigate) {
+  let frameCount = 0;
+  let startTime = performance.now();
+
+  function checkFPS() {
+    frameCount++;
+    const elapsed = performance.now() - startTime;
+    if (elapsed >= 1000) {
+      const fps = frameCount;
+      console.log(`FPS: ${fps}`);
+
+      if (fps < 10) {
+        navigate("/shop");
+      }
+
+      frameCount = 0;
+      startTime = performance.now();
+    }
+    requestAnimationFrame(checkFPS);
+  }
+
+  checkFPS();
+}
+
 
 function projectOnBall(clientX, clientY, width, height) {
   const x = (clientX / width) * 2 - 1;
@@ -215,12 +257,30 @@ function CameraFlyThrough({ onComplete, shopPreviewRef }) {
 
 
 export default function ThreeHome() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [isAllowed, setIsAllowed] = useState(false);
   const backgroundRef = useRef(null);
   const [flyThroughActive, setFlyThroughActive] = useState(false);
-  const navigate = useNavigate();
-  const shopPreviewRef = useRef(); 
+  const shopPreviewRef = useRef();
 
   useEffect(() => {
+    // ✅ Pre-check WebGL before rendering
+    if (!isWebGLAvailable() || isLowEndDevice()) {
+      console.warn("WebGL not supported or low-end device detected. Redirecting...");
+      navigate("/shop");
+    } else {
+      setIsAllowed(true);
+    }
+    setLoading(false);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!isAllowed) return;
+
+    // ✅ Start FPS Monitoring only if allowed
+    monitorFPS(navigate);
+
     const loadScripts = async () => {
       if (!window.p5) {
         const scriptP5 = document.createElement("script");
@@ -264,7 +324,8 @@ export default function ThreeHome() {
         backgroundRef.current.vantaEffect.destroy();
       }
     };
-  }, []);
+  }, [isAllowed, navigate]);
+
 
   const handleShopClick = () => {
     setFlyThroughActive(true);

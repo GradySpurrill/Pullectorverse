@@ -3,7 +3,7 @@ import ProductCard from "./components/ProductCard";
 import FilterBar from "./components/FilterBar";
 import gsap from "gsap";
 
-const ShopGraded = ({ products }) => {
+const ShopGraded = ({ products, currency }) => {
   const [filters, setFilters] = useState({
     inStock: null,
     priceRange: null,
@@ -74,7 +74,7 @@ const ShopGraded = ({ products }) => {
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8"
       >
         {filteredProducts.map((product) => (
-          <ProductCard key={product._id} product={product} />
+          <ProductCard key={product._id} product={product} currency={currency}/>
         ))}
       </div>
     </div>

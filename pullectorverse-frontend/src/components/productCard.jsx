@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Modal from "./productModal";
 import { useCart } from "./cartContext";
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, currency }) => {
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -79,10 +79,15 @@ const ProductCard = ({ product }) => {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between rounded-lg p-2">
-      <p className="text-gray-600 text-lg mt-1">${product.price.toFixed(2)}</p>
-        <span className="text-sm text-gray-600">In Stock: {product.stock}</span>
-      </div>
+<div className="mt-4 flex items-center justify-between rounded-lg p-2">
+  <p className="text-gray-600 text-lg mt-1">
+    {currency === "CAD"
+      ? `C$${product.price.toFixed(2)}`
+      : `US$${(product.price * 0.75).toFixed(2)}`}
+  </p>
+  <span className="text-sm text-gray-600">In Stock: {product.stock}</span>
+</div>
+
 
       <div className="mt-4 flex items-center justify-between">
         <button
