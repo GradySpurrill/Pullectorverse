@@ -31,13 +31,11 @@ function isWebGLAvailable() {
     return false;
   }
 }
-
-// Performance Check: Detect Low-End Devices
 function isLowEndDevice() {
   return navigator.hardwareConcurrency < 4 || navigator.deviceMemory < 4;
 }
 
-// FPS Monitoring Function
+
 function monitorFPS(navigate) {
   let frameCount = 0;
   let startTime = performance.now();
@@ -72,8 +70,8 @@ function projectOnBall(clientX, clientY, width, height) {
 
 
 function LogoModel() {
-  const { scene } = useGLTF("/models/LOGO.glb");
-  return <primitive object={scene} position={[0, 3, 3.5]} />;
+  const { scene } = useGLTF("/models/LOGOV8.glb");
+  return <primitive object={scene} position={[0.4, 3, 3.5]} />;
 }
 
 function PokeballModel() {
@@ -161,7 +159,7 @@ function PokeballModel() {
 }
 
 function ShopButtonModel({ onShopClick }) {
-  const { scene } = useGLTF("/models/Shop.glb");
+  const { scene } = useGLTF("/models/ShopV6.glb");
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
@@ -178,7 +176,7 @@ function ShopButtonModel({ onShopClick }) {
     },
   });
   return (
-    <animated.group scale={scale} position={[0, -6, -3]}>
+    <animated.group scale={scale} position={[0.4, -4.5, -1]}>
 
       <primitive object={scene} />
 
@@ -265,7 +263,6 @@ export default function ThreeHome() {
   const shopPreviewRef = useRef();
 
   useEffect(() => {
-    // ✅ Pre-check WebGL before rendering
     if (!isWebGLAvailable() || isLowEndDevice()) {
       console.warn("WebGL not supported or low-end device detected. Redirecting...");
       navigate("/shop");
@@ -278,7 +275,6 @@ export default function ThreeHome() {
   useEffect(() => {
     if (!isAllowed) return;
 
-    // ✅ Start FPS Monitoring only if allowed
     monitorFPS(navigate);
 
     const loadScripts = async () => {
@@ -306,7 +302,7 @@ export default function ThreeHome() {
           minWidth: window.innerWidth,
           scale: 1.0,
           scaleMobile: 1.0,
-          backgroundColor: 0x222222,
+          backgroundColor: 0xf0e0e,
           color: 0xe5a64,
           color2: 0x84848,
           size: 3,
