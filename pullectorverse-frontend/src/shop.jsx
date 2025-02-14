@@ -10,7 +10,7 @@ import gsap from "gsap";
 
 const conversionRates = {
   CAD: 1,
-  USD: 0.75, // 1 CAD = 0.75 USD
+  USD: 0.75, 
 };
 
 const Shop = () => {
@@ -23,8 +23,9 @@ const Shop = () => {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const contentRef = useRef(null);
 
-  // Currency State (Default: CAD, Stored in localStorage)
-  const [currency, setCurrency] = useState(localStorage.getItem("currency") || "CAD");
+  const [currency, setCurrency] = useState(
+    localStorage.getItem("currency") || "CAD"
+  );
 
   useEffect(() => {
     if (contentRef.current) {
@@ -71,7 +72,6 @@ const Shop = () => {
     fetchProducts();
   }, []);
 
-  // Handle currency change
   const handleCurrencyChange = (event) => {
     const newCurrency = event.target.value;
     setCurrency(newCurrency);
@@ -82,7 +82,11 @@ const Shop = () => {
     <div className="min-h-screen bg-white text-black px-6 pb-10">
       <nav className="flex justify-between items-center p-4 bg-white">
         <div className="flex items-center">
-          <img src="PVLOGOBASEV3.png" alt="Pullectorverse Logo" className="w-95 h-13" />
+          <img
+            src="PVLOGOBASEV3.png"
+            alt="Pullectorverse Logo"
+            className="w-95 h-13"
+          />
         </div>
         <div className="relative w-1/3">
           <input
@@ -94,7 +98,10 @@ const Shop = () => {
           />
         </div>
         <div className="flex gap-6 text-cyan-900 text-lg">
-          <button>Account</button>
+          <Link to="/profile" className="hover:underline">
+            Account
+          </Link>
+
           <button>Shop</button>
           <button>Rip on Stream</button>
           <Link to="/cart" className="relative flex items-center">
@@ -159,11 +166,22 @@ const Shop = () => {
       <div ref={contentRef}>
         <div className="mt-8 px-4">
           {category === "sealed" && (
-            <ShopSealed products={products} loading={loading} error={error} currency={currency} />
-)}
-          {category === "singles" && <ShopSingles products={products} currency={currency} />}
-          {category === "graded" && <ShopGraded products={products} currency={currency} />}
-          {category === "accessories" && <ShopAccessories products={products} currency={currency} />}
+            <ShopSealed
+              products={products}
+              loading={loading}
+              error={error}
+              currency={currency}
+            />
+          )}
+          {category === "singles" && (
+            <ShopSingles products={products} currency={currency} />
+          )}
+          {category === "graded" && (
+            <ShopGraded products={products} currency={currency} />
+          )}
+          {category === "accessories" && (
+            <ShopAccessories products={products} currency={currency} />
+          )}
         </div>
       </div>
     </div>

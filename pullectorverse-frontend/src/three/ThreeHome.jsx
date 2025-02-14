@@ -185,7 +185,7 @@ function ShopButtonModel({ onShopClick }) {
         onPointerOut={() => setHovered(false)}
         onClick={() => setClicked(true)}
       >
-        <boxGeometry args={[2.2, 0.2, 1]} />
+        <boxGeometry args={[5.2, 0.2, 1]} />
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
     </animated.group>

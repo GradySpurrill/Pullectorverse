@@ -12,6 +12,8 @@ root.render(
     clientId="RTZStqYuBz2lcwQHroAkdAwpcHRMW5az"
     authorizationParams={{
       redirect_uri: "http://localhost:5173/profile",
+      audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+      scope: 'openid profile email'
     }}
   >
     <React.StrictMode>
