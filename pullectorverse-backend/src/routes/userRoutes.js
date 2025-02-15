@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/userModel.js';
 import { checkJwt } from '../middleware/checkJwt.js';
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -28,18 +29,10 @@ async function findOrCreateUser(userClaims) {
   return userDoc;
 }
 
-
 router.get('/:auth0_id', checkJwt, async (req, res) => {
   try {
     console.log(" Auth0 Token Claims:", req.auth);
     const userDoc = await findOrCreateUser(req.auth);
-
-    console.log(" Sending user profile to frontend:", {
-      username: userDoc.username,
-      email: userDoc.email,
-      addresses: userDoc.addresses,
-      cart: userDoc.cart,
-    });
 
     res.json({
       username: userDoc.username,
@@ -53,14 +46,11 @@ router.get('/:auth0_id', checkJwt, async (req, res) => {
   }
 });
 
-
-
 router.use('/:auth0_id/address', checkJwt, async (req, res, next) => {
   try {
     if (req.params.auth0_id !== req.auth.sub) {
       return res.status(403).json({ message: 'Forbidden: ID mismatch' });
     }
-
     req.userDoc = await findOrCreateUser(req.auth);
     next();
   } catch (err) {
@@ -83,6 +73,26 @@ router.post('/:auth0_id/address', async (req, res) => {
     res.status(201).json(req.userDoc.addresses.slice(-1)[0]);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    await axios.post(`https://${process.env.AUTH0_DOMAIN}/dbconnections/change_password`, {
+      client_id: process.env.AUTH0_CLIENT_ID,  
+      email: email,
+      connection: 'Username-Password-Authentication' 
+    });
+
+    res.status(200).json({ message: "Password reset email sent." });
+  } catch (error) {
+    console.error('Auth0 Password Reset Error:', error.response?.data || error.message);
+    res.status(500).json({
+      error: 'Failed to send password reset email.',
+      details: error.response?.data?.error_description || error.message
+    });
   }
 });
 
