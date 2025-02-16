@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useCart } from "./components/cartContext"; 
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const { cartItems, updateItemQuantity, removeItemFromCart, clearCart } = useCart();
@@ -31,6 +32,9 @@ const Cart = () => {
   const taxes = subtotal * 0.05; 
   const total = subtotal + shipping + taxes;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+
+  const navigate = useNavigate(); 
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mt-6">
@@ -119,15 +123,10 @@ const Cart = () => {
           Pay with PayPal
         </button>
         <button
-          className={`w-full py-3 bg-green-600 text-white rounded-md text-lg font-medium transition-transform transform ${
-            isClicked ? "scale-95" : ""
-          }`}
-          onClick={() => {
-            setIsClicked(true);
-            setTimeout(() => setIsClicked(false), 200);
-          }}
+        className="w-full py-3 bg-green-600 text-white rounded-md text-lg font-medium transition-transform transform"
+        onClick={() => navigate("/checkout")} // Redirects to checkout page
         >
-          Continue to Checkout
+         Continue to Checkout
         </button>
       </div>
 

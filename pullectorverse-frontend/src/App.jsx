@@ -5,6 +5,8 @@ import Cart from "./cart";
 import CartProvider from "./components/cartContext";
 import ThreeHome from "./three/ThreeHome";
 import Account from "./account";
+import Checkout from "./checkout";
+import Success from "./success";
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/profile" element={<Account />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/success" element={<Success />} />
         </Routes>
       </Router>
     </CartProvider>
