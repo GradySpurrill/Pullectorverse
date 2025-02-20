@@ -34,37 +34,50 @@ const Account = () => {
     phone: "",
   });
 
+  console.log("🔍 isAuthenticated:", isAuthenticated);
+  console.log("🔍 Auth0 User:", user);
+
   useEffect(() => {
     const fetchUserData = async () => {
       if (isAuthenticated && user) {
         try {
+          console.log("Fetching Auth0 Token...");
           const token = await getAccessTokenSilently({
             audience: customAudience,
           });
+
+          console.log("Received Token:", token);
+          if (!token) {
+            console.error("No Token Retrieved!");
+            return;
+          }
+
           const auth0Id = user.sub;
+          console.log("Auth0 User ID:", auth0Id);
 
           const profileRes = await axios.get(
             `http://localhost:5000/api/users/${auth0Id}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-
+          console.log("Profile Response:", profileRes.data);
           setEmail(profileRes.data.email);
 
           const addressesRes = await axios.get(
             `http://localhost:5000/api/users/${auth0Id}/address`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-
+          console.log("Addresses Response:", addressesRes.data);
           setAddresses(addressesRes.data);
         } catch (err) {
-          console.error("Error fetching data:", err);
-          setAddresses([]);
+          console.error(
+            "Error fetching data:",
+            err.response?.data || err.message
+          );
         } finally {
           setAddressesLoading(false);
         }
       }
     };
-
     fetchUserData();
   }, [isAuthenticated, user, getAccessTokenSilently, customAudience]);
 

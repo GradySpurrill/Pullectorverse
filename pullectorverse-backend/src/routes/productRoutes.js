@@ -1,26 +1,23 @@
-import express from 'express';
-import Product from '../models/productModel.js';
+import express from "express";
+import Product from "../models/productModel.js";
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const { category, sortBy } = req.query;
-    const filter = category ? { category } : {};
-    const sort = {};
+    console.log("Fetching products from MongoDB...");
 
+    const products = await Product.find({});
 
-    if (sortBy === "price_asc") sort.price = 1;
-    if (sortBy === "price_desc") sort.price = -1;
-    if (sortBy === "popularity") sort.popularity = -1;
-    if (sortBy === "newest") sort.createdAt = -1;
+    if (!products.length) {
+      console.warn("No products found in MongoDB!");
+    }
 
-    const products = await Product.find(filter).sort(sort);
     res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    console.error("Error Fetching Products:", error);
+    res.status(500).json({ message: "Error retrieving products" });
   }
 });
-
 
 export default router;

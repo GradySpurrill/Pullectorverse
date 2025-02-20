@@ -1,3 +1,4 @@
+import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import { useCart } from "./components/cartContext";
 import { useNavigate } from "react-router-dom";
@@ -7,30 +8,57 @@ const Checkout = () => {
   const { cartItems } = useCart();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState(null);
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
+
+  const {
+    isAuthenticated,
+    getAccessTokenSilently,
+    user: auth0User,
+  } = useAuth0();
+  const customAudience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
   useEffect(() => {
     const fetchUser = async () => {
-        try {
-          const token = localStorage.getItem("auth0_token"); 
-          if (!token) {
-            console.error("User not logged in (no token found)");
-            return;
-          }
-      
-          const res = await axios.get(`http://localhost:5000/api/auth/${auth0_id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-      
-          setUser(res.data);
-        } catch (err) {
-          console.error("Error fetching user:", err);
+      if (!isAuthenticated || !auth0User) {
+        console.warn("User is not authenticated.");
+        return;
+      }
+
+      try {
+        console.log("Fetching fresh Auth0 token...");
+        const token = await getAccessTokenSilently({
+          audience: customAudience,
+        });
+
+        console.log("Auth0 Token Retrieved:", token);
+
+        const auth0Id = auth0User.sub;
+        console.log("Auth0 User ID:", auth0Id);
+
+        if (!auth0Id) {
+          console.error("No Auth0 ID found.");
+          return;
         }
-      };
-      
+
+        const res = await axios.get(
+          `http://localhost:5000/api/users/${auth0Id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        console.log("Successfully Fetched User:", res.data);
+        setUser(res.data);
+      } catch (err) {
+        console.error(
+          "Error Fetching User:",
+          err.response?.data || err.message
+        );
+      }
+    };
 
     fetchUser();
-  }, []);
+  }, [isAuthenticated, auth0User, getAccessTokenSilently, customAudience]);
 
   const subtotal = cartItems.reduce((sum, item) => {
     const productPrice = item?.productId?.price ?? 0;
@@ -42,35 +70,54 @@ const Checkout = () => {
   const total = subtotal + shipping + taxes;
 
   const handlePayment = async () => {
+    console.log("User Object Before Payment:", user);
+
     if (!paymentMethod) {
       alert("Please select a payment method.");
       return;
     }
-  
+
+    if (!user) {
+      console.warn("No user found, defaulting to guest!");
+    }
+
+    const userId = user?.auth0_id || "guest";
+    const token = await getAccessTokenSilently({ audience: customAudience });
+
+    console.log("🔹 Sending Token to Backend:", token);
+
+    const paymentData = {
+      items: cartItems.map(({ productId, quantity }) => ({
+        id: productId?._id,
+        name: productId?.name,
+        price: productId?.price,
+        quantity,
+      })),
+      total,
+      email: user?.email || "guest@example.com",
+      userId,
+    };
+
+    console.log("Sending to Backend:", paymentData);
+
     try {
       let endpoint =
         paymentMethod === "stripe"
           ? "http://localhost:5000/api/payments/stripe"
           : "http://localhost:5000/api/payments/paypal";
-  
-      const res = await axios.post(endpoint, {
-        items: cartItems.map(({ productId, quantity }) => ({
-          id: productId?._id,
-          name: productId?.name,
-          price: productId?.price,
-          quantity,
-        })),
-        total,
-        email: user?.email || "guest@example.com", 
+
+      const res = await axios.post(endpoint, paymentData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-  
+
       window.location.href = res.data.url;
     } catch (err) {
       console.error("Payment error:", err);
       alert("Payment failed, please try again.");
     }
   };
-  
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mt-6">
